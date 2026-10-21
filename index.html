@@ -1,0 +1,1337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Haunted Mansion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000; --panel:#050505; --panel2:#0b0b0b; --line:#141414;
+  --dim:#4f4c48; --mid:#85817a; --txt:#a8a49c; --hi:#f3f0e9; --path:#e6e0d2;
+  --serif:'IM Fell English', Georgia, serif; --type:'Special Elite', 'Courier New', monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;color:var(--txt);font-family:var(--type);font-size:14px;overflow:hidden}
+button{font:inherit;color:var(--txt);background:var(--panel2);border:1px solid var(--line);padding:8px 14px;cursor:pointer;letter-spacing:.04em}
+button:hover:not(:disabled){color:var(--hi);border-color:#2a2a2a}
+button:disabled{opacity:.3;cursor:default}
+button.primary{color:var(--hi);border-color:#2b2b2b}
+button.ghostbtn{background:none;border-color:transparent;color:var(--mid);padding:4px 8px}
+input,select{font:inherit;color:var(--hi);background:#030303;border:1px solid var(--line);padding:8px 10px;outline:none}
+input:focus,select:focus{border-color:#333}
+[hidden]{display:none!important}
+
+/* ---------- atmosphere ---------- */
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:40;background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 35%,rgba(0,0,0,.55) 70%,rgba(0,0,0,.95) 100%)}
+#grain{position:fixed;inset:-120px;pointer-events:none;z-index:41;opacity:.07;mix-blend-mode:screen;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  animation:grain .8s steps(5) infinite}
+@keyframes grain{0%{transform:translate(0,0)}20%{transform:translate(-41px,23px)}40%{transform:translate(17px,-47px)}60%{transform:translate(-13px,31px)}80%{transform:translate(44px,7px)}100%{transform:translate(0,0)}}
+@keyframes flicker{0%{opacity:.92}6%{opacity:.78}8%{opacity:.95}20%{opacity:.88}23%{opacity:.7}25%{opacity:.9}48%{opacity:.84}60%{opacity:.97}62%{opacity:.8}64%{opacity:.93}80%{opacity:.86}92%{opacity:.75}94%{opacity:.9}100%{opacity:.92}}
+.shake{animation:shake .5s linear 2}
+@keyframes shake{0%,100%{transform:translate(0,0)}10%{transform:translate(-14px,6px)}20%{transform:translate(12px,-9px)}30%{transform:translate(-9px,-12px)}40%{transform:translate(10px,10px)}50%{transform:translate(-12px,3px)}60%{transform:translate(7px,-6px)}70%{transform:translate(-5px,9px)}80%{transform:translate(6px,-3px)}90%{transform:translate(-3px,2px)}}
+
+/* ---------- lobby ---------- */
+#lobby{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:16px}
+.lobbybox{width:min(420px,100%);text-align:center}
+h1{font-family:var(--serif);font-weight:400;font-size:52px;letter-spacing:.06em;color:var(--hi);margin:0 0 4px;text-shadow:0 0 18px rgba(255,255,255,.12)}
+.sub{font-family:var(--serif);font-style:italic;color:var(--dim);margin:0 0 36px;font-size:17px}
+.lobbybox label{display:block;text-align:left;color:var(--dim);font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:18px}
+.lobbybox label input{display:block;width:100%;margin-top:6px}
+.lobbybox .row{display:flex;gap:8px;justify-content:center;margin-top:8px}
+.lobbybox .row input{width:110px;text-transform:uppercase;letter-spacing:.3em;text-align:center}
+.lobbybox .or{color:var(--dim);margin:14px 0 6px;font-size:12px}
+.lobbybox .small{font-size:12px;color:var(--dim);align-items:center}
+.lobbybox .small select{padding:4px 6px}
+#bCreate{width:100%}
+.code{font-size:15px;color:var(--mid);margin-bottom:10px}
+.code b{font-size:30px;letter-spacing:.3em;color:var(--hi);font-weight:400;margin-left:6px}
+.status{font-size:12px;color:var(--dim);min-height:18px;margin-bottom:18px}
+.status b{color:var(--mid);font-weight:400}
+#lobbyPlayers{list-style:none;padding:0;margin:0 0 18px;text-align:left;border-top:1px solid var(--line)}
+#lobbyPlayers li{padding:9px 6px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;color:var(--mid)}
+#lobbyPlayers li .you{color:var(--dim);font-size:11px;margin-left:auto}
+#lobbyMsg{color:var(--dim);font-size:13px;min-height:20px;margin-bottom:12px}
+#lobbyErr{color:var(--mid);font-size:12px;min-height:16px;margin-top:12px}
+
+/* ---------- game layout ---------- */
+#game{position:fixed;inset:0;display:flex;flex-direction:column}
+#top{display:flex;align-items:stretch;gap:12px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line);z-index:5}
+#players{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+.pchip{background:var(--panel2);border:1px solid var(--line);padding:5px 10px 5px 6px;display:flex;align-items:center;gap:7px;color:var(--dim);font-size:12px;min-width:0}
+.pchip svg.mee{width:18px;height:18px;flex:none}
+.pchip b{font-weight:400;color:var(--mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
+.pchip.on{border-color:#3a3a3a}
+.pchip.on b{color:var(--hi)}
+.pchip.out{opacity:.4}
+.pchip .st{font-size:11px;color:var(--dim)}
+.pchip .mini{display:flex;gap:2px}
+.pchip .mini svg{width:13px;height:13px;color:var(--mid)}
+.pchip .mini svg.u{opacity:.3}
+#dreadbox{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 10px}
+#dreadbox .lbl{font-size:10px;letter-spacing:.35em;color:var(--dim);margin-bottom:4px}
+#dread{display:flex;gap:4px}
+#dread i{display:block;width:30px;height:9px;background:#0a0a0a;border:1px solid #181818;transition:background .6s,box-shadow .6s}
+#dread.hot i.f{animation:throb 1.1s ease-in-out infinite}
+@keyframes throb{50%{filter:brightness(1.6)}}
+#info{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;font-size:11px;color:var(--dim);gap:2px;white-space:nowrap}
+#info b{color:var(--mid);font-weight:400}
+#info .open{color:var(--hi)}
+
+#mapwrap{position:relative;flex:1;min-height:0;overflow:hidden;background:#000}
+#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab;display:block}
+#map.dragging{cursor:grabbing}
+#candle{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 48%,rgba(0,0,0,0) 0%,rgba(0,0,0,.2) 40%,rgba(0,0,0,.8) 100%);animation:flicker 6.5s linear infinite}
+#hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);text-align:center;color:var(--mid);font-size:13px;z-index:3;max-width:90%;pointer-events:none}
+#hint .me{color:var(--hi)}
+#hint .row{margin-top:8px;display:flex;gap:6px;justify-content:center;pointer-events:auto}
+#hint .flash{color:var(--hi);display:block;margin-top:4px}
+#banner{position:absolute;left:0;right:0;top:38%;text-align:center;font-family:var(--serif);font-size:46px;color:var(--hi);letter-spacing:.2em;pointer-events:none;opacity:0;z-index:3;text-shadow:0 0 30px rgba(255,255,255,.25)}
+#banner.go{animation:banner 2.2s ease-out}
+@keyframes banner{0%{opacity:0;letter-spacing:.35em}20%{opacity:.85}100%{opacity:0;letter-spacing:.2em}}
+#log{position:absolute;left:12px;bottom:10px;width:min(380px,60%);font-size:12px;line-height:1.5;pointer-events:none;z-index:3}
+#log div{color:var(--mid);transition:opacity .4s}
+#recenter{position:absolute;right:12px;bottom:12px;z-index:3;padding:6px 10px}
+#menu{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:var(--panel2);border:1px solid #1d1d1d;padding:12px;min-width:280px;z-index:6;box-shadow:0 0 40px #000}
+#menu h3{font-family:var(--serif);font-weight:400;color:var(--hi);margin:0 0 8px;font-size:18px}
+#menu button{display:block;width:100%;text-align:left;margin-top:6px}
+#menu button small{display:block;color:var(--dim);font-size:11px;margin-top:2px}
+
+#me{display:grid;grid-template-columns:auto 1fr auto auto;gap:14px;padding:10px 14px;background:var(--panel);border-top:1px solid var(--line);z-index:5;min-height:118px}
+#me .col{display:flex;flex-direction:column;min-width:0}
+#me .cap{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+#me .acts{justify-content:center;gap:8px;width:150px}
+#me .acts button{width:100%}
+#bDraw{color:var(--hi)}
+.discs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;min-height:76px;align-items:flex-start}
+.disc{flex:none;width:64px;height:76px;padding:0;background:none;border:none;display:flex;flex-direction:column;align-items:center;position:relative;color:var(--mid)}
+.disc .face{width:54px;height:54px;border-radius:50%;background:#0d0d0d;border:1px solid #222;display:flex;align-items:center;justify-content:center;transition:border-color .2s,box-shadow .2s}
+.disc svg{width:34px;height:34px}
+.disc .dn{font-size:10px;margin-top:4px;white-space:nowrap;color:var(--dim)}
+.disc .pips{position:absolute;top:0;right:4px;font-size:10px;color:var(--mid);letter-spacing:-1px}
+.disc.use:hover .face{border-color:#555;box-shadow:0 0 12px rgba(255,255,255,.08);color:var(--hi)}
+.disc.use:hover{color:var(--hi)}
+.disc.sel .face{border-color:var(--hi);box-shadow:0 0 16px rgba(255,255,255,.18)}
+.disc.sel{color:var(--hi)}
+.disc.used{opacity:.22}
+.disc.idle{cursor:default}
+.disc.keep .face{border-color:var(--hi)}
+.slot{flex:none;width:54px;height:54px;border-radius:50%;border:1px dashed #1c1c1c;margin:0 5px}
+#pocket{min-width:140px}
+#bag{font-size:12px;color:var(--mid);columns:2;column-gap:16px;min-width:190px;line-height:1.55}
+#bag span{color:var(--dim)}
+
+/* ---------- map svg ---------- */
+.lg1{opacity:.03} .lg2{opacity:.07} .ll{opacity:.55}
+.lg1 .c{stroke:var(--path);stroke-width:42;fill:none} .lg1 .r{fill:var(--path);stroke:var(--path);stroke-width:20;stroke-linejoin:round}
+.lg2 .c{stroke:var(--path);stroke-width:30;fill:none} .lg2 .r{fill:var(--path);stroke:var(--path);stroke-width:8;stroke-linejoin:round}
+.ll .c{stroke:var(--path);stroke-width:24.4;fill:none} .ll .r{fill:var(--path);stroke:var(--path);stroke-width:2.4;stroke-linejoin:round}
+.lf .c{stroke:#050505;stroke-width:22;fill:none} .lf .r{fill:url(#boards);stroke:none}
+.cl{stroke:#141414;stroke-width:1;fill:none;stroke-dasharray:3 7}
+.web{stroke:#2a2a2a;stroke-width:.7;fill:none}
+.door{fill:#020202;stroke:#3a3832;stroke-width:1.2}
+.door.open{fill:#e9e5da;stroke:#fff;filter:url(#glow)}
+.doortxt{font-family:var(--type);font-size:7px;fill:#3a3832;letter-spacing:2px;text-anchor:middle}
+.doortxt.open{fill:#e9e5da}
+.btnring{fill:none;stroke:#4a4741;stroke-width:1.5}
+.btndot{fill:#2a2925}
+.btn.on .btnring{stroke:#f3f0e9}
+.btn.on .btndot{fill:#f3f0e9;filter:url(#glow)}
+.preview{opacity:.75;cursor:pointer}
+.preview .frame{fill:none;stroke:#cfcabd;stroke-width:1.5;stroke-dasharray:5 5}
+.preview.bad .frame{stroke:#555;stroke-dasharray:2 6}
+.tgt{fill:rgba(240,236,226,.05);stroke:#d9d4c8;stroke-width:1.4;cursor:pointer;animation:pulse 1.6s ease-in-out infinite}
+.tgt.soft{stroke:#6d6a63;animation:none}
+.tgt:hover{fill:rgba(240,236,226,.14);stroke:#fff}
+@keyframes pulse{50%{stroke-opacity:.35}}
+.cellt{fill:rgba(255,255,255,.012);stroke:#8a867e;stroke-width:1.2;stroke-dasharray:6 6;cursor:pointer}
+.cellt.soft{stroke:#383632}
+.cellt:hover{fill:rgba(255,255,255,.04);stroke:#e9e5da}
+.celltxt{font-family:var(--serif);font-size:30px;fill:#2c2b28;text-anchor:middle;pointer-events:none}
+.acttxt{font-family:var(--type);font-size:8px;fill:#cfcabd;text-anchor:middle;pointer-events:none;letter-spacing:1px}
+.mee{pointer-events:none}
+.mee .body{stroke:#000;stroke-width:1.2}
+.mee.act .body{stroke:#e9e5da;stroke-width:1.4}
+
+/* ---------- overlays ---------- */
+#scare{position:fixed;inset:0;background:#000;z-index:100;display:flex;align-items:center;justify-content:center}
+#scare svg{width:min(80vh,90vw);height:auto;opacity:0;transform:scale(.35);filter:drop-shadow(0 0 40px rgba(230,230,220,.45))}
+#scare.ghost svg{animation:ghostin .75s cubic-bezier(.2,1.6,.4,1) forwards}
+#scare.out{transition:opacity .35s;opacity:0}
+@keyframes ghostin{0%{opacity:0;transform:scale(.35)}25%{opacity:1}100%{opacity:1;transform:scale(1.18)}}
+.veil{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px}
+.panel{background:var(--panel2);border:1px solid #1b1b1b;padding:22px 24px;width:min(460px,100%);max-height:90vh;overflow:auto;box-shadow:0 0 60px #000}
+.panel h2{font-family:var(--serif);font-weight:400;color:var(--hi);font-size:26px;margin:0 0 12px;letter-spacing:.04em}
+.panel p{color:var(--mid);margin:0 0 10px;line-height:1.5}
+.panel .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.panel .discs{flex-wrap:wrap}
+#chaseLines div{padding:5px 0;color:var(--txt);border-bottom:1px solid var(--line);animation:fadein .4s}
+#chaseLines div.bad{color:var(--hi)}
+#chaseLines div.dimmed{color:var(--dim)}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}}
+table.score{width:100%;border-collapse:collapse;margin-top:6px}
+table.score td{padding:7px 4px;border-bottom:1px solid var(--line);color:var(--mid)}
+table.score td.n{text-align:right}
+table.score tr.win td{color:var(--hi)}
+
+@media (max-width:820px){
+  #top{flex-wrap:wrap}
+  #info{flex-direction:row;gap:10px;flex-wrap:wrap}
+  #me{grid-template-columns:1fr 1fr;min-height:0}
+  #me .acts{flex-direction:row;width:auto;grid-column:1/-1}
+  #me .front{grid-column:1/-1}
+  #bag{columns:1;min-width:0}
+  h1{font-size:40px}
+  #log{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<section id="lobby">
+  <div class="lobbybox">
+    <h1>Haunted Mansion</h1>
+    <p class="sub">Sneak in. Steal what glitters. Don't make a sound.</p>
+    <div id="lobbyStart">
+      <label>Your name<input id="inName" maxlength="16" autocomplete="off" spellcheck="false"></label>
+      <button id="bCreate" class="primary">Create room</button>
+      <div class="or">or join a friend</div>
+      <div class="row"><input id="inCode" maxlength="5" placeholder="CODE" autocomplete="off" spellcheck="false"><button id="bJoin">Join room</button></div>
+      <div class="row small">signal via
+        <select id="inStrat"><option value="nostr">Nostr relays</option><option value="torrent">BitTorrent trackers</option></select>
+      </div>
+      <div id="lobbyErr"></div>
+    </div>
+    <div id="lobbyRoom" hidden>
+      <div class="code">Room<b id="roomCode"></b></div>
+      <button id="bCopy" class="ghostbtn">copy invite link</button>
+      <div id="netStatus" class="status"></div>
+      <ul id="lobbyPlayers"></ul>
+      <div id="lobbyMsg"></div>
+      <button id="bStart" class="primary" hidden>Start</button>
+      <button id="bLeave" class="ghostbtn">leave</button>
+    </div>
+  </div>
+</section>
+
+<section id="game" hidden>
+  <header id="top">
+    <div id="players"></div>
+    <div id="dreadbox"><div class="lbl">DREAD</div><div id="dread"></div></div>
+    <div id="info"></div>
+  </header>
+  <div id="mapwrap">
+    <svg id="map" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="boards" width="16" height="128" patternUnits="userSpaceOnUse">
+          <rect width="16" height="128" fill="#070707"/>
+          <path d="M15.5 0V128" stroke="#0f0f0f" stroke-width="1"/>
+          <path d="M0 37H15M0 101H15" stroke="#0e0e0e" stroke-width="1"/>
+        </pattern>
+        <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="3" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <g id="world"></g>
+    </svg>
+    <div id="candle"></div>
+    <div id="banner"></div>
+    <div id="hint"></div>
+    <div id="log"></div>
+    <button id="recenter" title="Centre the map on you">centre</button>
+    <div id="menu" hidden></div>
+  </div>
+  <footer id="me">
+    <div class="col acts">
+      <button id="bDraw">Draw</button>
+      <button id="bEnd">End turn</button>
+    </div>
+    <div class="col front"><div class="cap">In front of you</div><div id="front" class="discs"></div></div>
+    <div class="col"><div class="cap">Pocket</div><div id="pocket" class="discs"></div></div>
+    <div class="col"><div class="cap">Bag <span id="bagN"></span></div><div id="bag"></div></div>
+  </footer>
+</section>
+
+</div>
+
+<div id="scare" hidden>
+  <svg viewBox="0 0 240 320" aria-hidden="true">
+    <defs>
+      <linearGradient id="gg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#eeede7"/><stop offset=".45" stop-color="#c9c8c1"/><stop offset="1" stop-color="#8d8c86" stop-opacity="0"/>
+      </linearGradient>
+      <radialGradient id="hollow"><stop offset=".35" stop-color="#000"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+      <filter id="wisp" x="-20%" y="-20%" width="140%" height="140%">
+        <feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="7"/>
+        <feDisplacementMap in="SourceGraphic" scale="9"/>
+        <feGaussianBlur stdDeviation=".8"/>
+      </filter>
+    </defs>
+    <g filter="url(#wisp)">
+      <path fill="url(#gg)" d="M120 16C158 16 178 50 176 94C175 124 166 146 170 176C176 220 196 262 212 318L28 318C44 262 64 220 70 176C74 146 65 124 64 94C62 50 82 16 120 16Z"/>
+      <path fill="url(#gg)" d="M72 168C42 178 18 200 4 240C13 229 21 225 27 227C21 236 19 246 21 256C27 243 33 236 39 236C37 245 39 254 43 260C45 245 52 231 64 222Z"/>
+      <path fill="url(#gg)" d="M168 168C198 178 222 200 236 240C227 229 219 225 213 227C219 236 221 246 219 256C213 243 207 236 201 236C203 245 201 254 197 260C195 245 188 231 176 222Z"/>
+      <ellipse cx="97" cy="98" rx="14" ry="23" fill="url(#hollow)" transform="rotate(14 97 98)"/>
+      <ellipse cx="143" cy="98" rx="14" ry="23" fill="url(#hollow)" transform="rotate(-14 143 98)"/>
+      <circle cx="98" cy="102" r="1.8" fill="#fff"/><circle cx="142" cy="102" r="1.8" fill="#fff"/>
+      <path fill="#000" d="M107 140C102 172 105 204 120 220C135 204 138 172 133 140C126 133 114 133 107 140Z"/>
+    </g>
+  </svg>
+</div>
+
+<div id="veil" class="veil" hidden><div class="panel" id="panel"></div></div>
+<div id="vignette"></div>
+<div id="grain"></div>
+
+<script type="module">
+// =====================================================================
+//  CONFIG: every tunable number and all tile / token counts live here.
+// =====================================================================
+const CONFIG = {
+  appId: 'haunted-mansion-p2p-7f3k2q',   // fixed, unique Trystero app id
+  minPlayers: 2,
+  maxPlayers: 6,
+  roomCodeLength: 5,
+
+  dreadMax: 5,             // meter at/above this -> jumpscare
+  chaseRange: 2,           // tiles, grid distance ignoring walls
+  bottleRange: 2,          // tiles
+  distance: 'manhattan',   // 'manhattan' or 'chebyshev' (diagonals count as 1)
+  pocketSize: 2,
+  catchRemoves: 2,         // tokens removed permanently when caught
+  buttonsToOpen: 2,
+  buttonPoints: 5,
+  finalTurns: 2,           // turns everyone else gets after the first escape
+  sneakersSteps: 2,        // sneakers move up to this many spaces
+  crowbarSearches: 2,
+  crowbarDread: 1,
+  randomFirstPlayer: true,
+
+  // noise = dread added when drawn (Noise, treasure); value = points at the end
+  tokens: {
+    boot:     {noise: 0, value: 0},
+    explore:  {noise: 0, value: 0},
+    noise:    {noise: 1, value: 0},
+    bottle:   {noise: 0, value: 0},
+    sneakers: {noise: 0, value: 0},
+    slippers: {noise: 0, value: 0},
+    hiding:   {noise: 0, value: 0},
+    crowbar:  {noise: 0, value: 0},   // crowbar's dread is crowbarDread, applied on use
+    map:      {noise: 0, value: 0},
+    t1:       {noise: 0, value: 1},
+    t2:       {noise: 1, value: 2},
+    t3:       {noise: 2, value: 3},
+  },
+  startBag:  {boot: 3, explore: 2, noise: 2},
+  searchBag: {boot: 6, explore: 6, noise: 2, bottle: 2, sneakers: 2, slippers: 2, hiding: 2,
+              crowbar: 2, map: 2, t1: 2, t2: 2, t3: 2},
+  deck:      {crossroad: 4, tee: 4, diag: 4, straight2: 4, room4: 4, button: 2},
+
+  playerColors: ['#8e9b7c', '#7c8ba0', '#a3906c', '#8f7f9f', '#6f9a94', '#a07f7c'],
+  scareMs: 1400,           // jumpscare length (keep under 1500)
+  chaseStepMs: 900,        // delay between chase reveals
+  tileSize: 128,
+
+  strategies: {
+    nostr:   'https://cdn.jsdelivr.net/npm/trystero@0.26.0/+esm',
+    torrent: 'https://cdn.jsdelivr.net/npm/@trystero-p2p/torrent@0.26.0/+esm',
+  },
+};
+
+// =====================================================================
+//  Tiles. Base orientation, 128x128 box. Edges: 0=N 1=E 2=S 3=W.
+//  Each node is one space. shapes: ['c', pathD] corridor, ['r', x,y,w,h] room, ['p', points] room polygon.
+// =====================================================================
+const N = 0, E = 1, S_ = 2, W = 3;
+const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+const TILE_TYPES = {
+  start: {name: 'Entrance hall', nodes: [
+    {kind: 'start', edges: [N, E, S_, W], at: [64, 64],
+     shapes: [['c', 'M64 0V16M64 112V128M0 64H16M112 64H128'], ['r', 14, 14, 100, 100]]}]},
+  crossroad: {name: 'Crossroad', nodes: [
+    {kind: 'path', edges: [N, E, S_, W], at: [64, 64], shapes: [['c', 'M64 0V128M0 64H128']]}]},
+  tee: {name: 'T-junction with room', nodes: [
+    {kind: 'path', edges: [E, S_, W], at: [64, 64], shapes: [['c', 'M0 64H128M64 64V128']]},
+    {kind: 'room', edges: [N], at: [64, 25], shapes: [['c', 'M64 0V8'], ['r', 38, 6, 52, 38]]}]},
+  diag: {name: 'Crooked room', nodes: [
+    {kind: 'room', edges: [W, S_], at: [45, 83],
+     shapes: [['c', 'M0 64A64 64 0 0 1 64 128'], ['p', '45,57 71,83 45,109 19,83']]}]},
+  straight2: {name: 'Hall with two rooms', nodes: [
+    {kind: 'path', edges: [W, E], at: [64, 64], shapes: [['c', 'M0 64H128']]},
+    {kind: 'room', edges: [N], at: [64, 24], shapes: [['c', 'M64 0V8'], ['r', 38, 6, 52, 36]]},
+    {kind: 'room', edges: [S_], at: [64, 104], shapes: [['c', 'M64 120V128'], ['r', 38, 86, 52, 36]]}]},
+  room4: {name: 'Parlour', nodes: [
+    {kind: 'room', edges: [N, E, S_, W], at: [64, 64], shapes: [['c', 'M64 0V128M0 64H128'], ['r', 38, 38, 52, 52]]}]},
+  button: {name: 'Button room', nodes: [
+    {kind: 'button', edges: [N, E, S_, W], at: [64, 64], shapes: [['c', 'M64 0V128M0 64H128'], ['r', 40, 40, 48, 48]]}]},
+};
+const START_NODE = '0,0,0';
+
+const TOKEN_INFO = {
+  boot:     {name: 'Boot', use: true, desc: 'Move 1 space.'},
+  explore:  {name: 'Explore', use: true, desc: 'Reveal an adjacent tile, search a room, press a button, or exit.'},
+  noise:    {name: 'Noise', use: false, pocket: false, desc: 'Dread +1 the moment it is drawn. Cannot be pocketed.'},
+  bottle:   {name: 'Bottle', use: true, desc: 'Aim at a player within 2 tiles: if your next token fills the dread meter this turn, the ghost takes them instead.'},
+  sneakers: {name: 'Sneakers', use: true, desc: 'Move up to 2 spaces.'},
+  slippers: {name: 'Slippers', use: true, desc: 'The next Noise you draw this turn is removed from the game before it resolves.'},
+  hiding:   {name: 'Hiding spot', use: false, desc: 'Only works from your pocket: cancels being caught once, then is removed.'},
+  crowbar:  {name: 'Crowbar', use: true, desc: 'In a room: search twice. Dread +1 when used.'},
+  map:      {name: 'Secret map', use: true, desc: 'Move to any room on the map.'},
+  t1:       {name: 'Treasure 1', use: false, desc: 'Worth 1. Silent.'},
+  t2:       {name: 'Treasure 2', use: false, desc: 'Worth 2. Dread +1 when drawn.'},
+  t3:       {name: 'Treasure 3', use: false, desc: 'Worth 3. Dread +2 when drawn.'},
+};
+const TOKEN_ORDER = Object.keys(TOKEN_INFO);
+
+// Token icons (viewBox 0 0 56.69 56.69). Boot, Explore, Noise and Bottle are the original artwork.
+const BOOT_D = 'M39.15,39.54c-2.89-1.11-5.94-5.12-7.33-7.26l9.42-17.11-1.73-.56c-.11,0-11.21-3.71-15.36-9.48L22.29,2.55,15.36,28.73,7.6,44.79l35.15,7.44.93-4.41A7.41,7.41,0,0,0,39.15,39.54Zm1.59,7.71-.3,1.42L12,42.65l6.16-12.74,5.53-20.8c4.07,3.92,10.25,6.6,13.23,7.74l-8.53,15.5.43.74c.18.3,4.38,7.36,9.28,9.25C41.24,43.56,40.79,46.93,40.74,47.25Z';
+const WAVES = '<path d="M45.64,45.68l-2.11-2.12a21.44,21.44,0,0,0-.08-30.42L45.56,11a24.42,24.42,0,0,1,.08,34.67Z"/><path d="M11.05,45.68A24.46,24.46,0,0,1,11.13,11l2.11,2.14a21.45,21.45,0,0,0-.07,30.42Z"/><path d="M15.09,41.64A18.74,18.74,0,0,1,15.17,15l2.11,2.14a15.73,15.73,0,0,0-.07,22.34Z"/><path d="M41.6,41.64l-2.11-2.12a15.75,15.75,0,0,0-.07-22.34L41.52,15a18.74,18.74,0,0,1,.08,26.6Z"/><path d="M19.61,37.12a12.35,12.35,0,0,1,.09-17.56l2.09,2.15A9.36,9.36,0,0,0,21.73,35Z"/><path d="M37.09,37.12,35,35a9.34,9.34,0,0,0,2.74-6.62,9.23,9.23,0,0,0-2.81-6.67L37,19.56a12.35,12.35,0,0,1,.09,17.56Z"/>';
+const gem = v => `<g fill="none" stroke="currentColor" stroke-linejoin="round"><path stroke-width="2.6" d="M14 22l7-9h14.7l7 9-14.35 24z"/><path stroke-width="1.2" d="M14 22h28.7M21 13l7.35 33M35.7 13l-7.35 33M21 22l7.35-9 7.35 9"/></g><text x="47" y="15" font-size="13" fill="currentColor" font-family="Special Elite, monospace">${v}</text>`;
+const ICONS = {
+  boot: `<path fill="currentColor" d="${BOOT_D}"/>`,
+  explore: '<path fill="currentColor" d="M46.82,44.73l-13-13a15.81,15.81,0,1,0-2.12,2.12l13,13a1.53,1.53,0,0,0,1.06.44,1.5,1.5,0,0,0,1.06-2.56ZM21.68,34.49a12.8,12.8,0,1,1,10-4.87,12.51,12.51,0,0,1-2.12,2.12A12.69,12.69,0,0,1,21.68,34.49Z"/>',
+  noise: `<g fill="currentColor">${WAVES}<rect x="26.85" y="19.07" width="3" height="13.18"/><rect x="26.85" y="33.99" width="3" height="3"/></g>`,
+  bottle: `<g fill="currentColor">${WAVES}<path d="M33.88,24.55,32.6,19.78a5.18,5.18,0,0,1-.18-1.36V13.18a3.37,3.37,0,0,0-3.37-3.37h-1.4a3.37,3.37,0,0,0-3.37,3.37v5.24a5.18,5.18,0,0,1-.18,1.36l-1.28,4.78a8,8,0,0,0-.28,2.13v17.4a2.74,2.74,0,0,0,2.74,2.74h6.14a2.74,2.74,0,0,0,2.74-2.74V26.69A8.17,8.17,0,0,0,33.88,24.55ZM31.16,43.83H25.54V26.69a5.18,5.18,0,0,1,.18-1.36L27,20.56a8.61,8.61,0,0,0,.28-2.14V13.18a.37.37,0,0,1,.37-.37h1.4a.38.38,0,0,1,.37.37v5.24a8.61,8.61,0,0,0,.28,2.14L31,25.33a5.18,5.18,0,0,1,.18,1.36Z"/></g>`,
+  sneakers: `<g transform="translate(9 3) scale(.86)"><path fill="currentColor" d="${BOOT_D}"/></g><path d="M3 22h9M1 30h10M4 38h8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>`,
+  slippers: '<path d="M7 37c0-7 7-11 16-11 6 0 9 3 14 3 5 0 12 2 12 7 0 6-7 8-15 8H17c-6 0-10-2-10-7z" fill="none" stroke="currentColor" stroke-width="2.8"/><path d="M12 33c4-3 9-3 13 0" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="33" y="20" font-size="11" fill="currentColor" font-family="Special Elite, monospace">z</text><text x="41" y="13" font-size="8" fill="currentColor" font-family="Special Elite, monospace">z</text>',
+  hiding: '<g fill="none" stroke="currentColor"><rect x="14" y="6" width="28.7" height="42" rx="2" stroke-width="2.8"/><path d="M28.35 8v38M18 48v4M38.7 48v4" stroke-width="2"/></g><circle cx="24.5" cy="25" r="1.8" fill="currentColor"/><circle cx="32.2" cy="25" r="1.8" fill="currentColor"/>',
+  crowbar: '<g fill="none" stroke="currentColor" stroke-linecap="round"><path d="M13 47L36.5 15.5c2.2-3 6.5-4 9.5-1.2" stroke-width="4.2"/><path d="M9 43.5l7.5 5.5" stroke-width="3"/></g>',
+  map: '<g fill="none" stroke="currentColor" stroke-linejoin="round"><path d="M8 15l13.5-4.5 14 4.5 13.5-4.5v31.5l-13.5 4.5-14-4.5-13.5 4.5z" stroke-width="2.6"/><path d="M21.5 10.5v31.5M35.5 15v31.5" stroke-width="1.3"/><path d="M12 37c3-6 8-6 11-3s7 1 9-3" stroke-width="1.4" stroke-dasharray="2 2.5"/><path d="M36 24l6 6M42 24l-6 6" stroke-width="2.6"/></g>',
+  t1: gem(1), t2: gem(2), t3: gem(3),
+};
+const MEEPLE_D = 'M12 1.5a3.7 3.7 0 0 1 3.7 3.7c0 1.2-.6 2.3-1.5 3 2.7.5 8.1 1.9 8.1 4.2 0 1.5-2.6 1.7-4.7 1.4l3.5 8.2c.2.6-.2 1.2-.9 1.2h-4.5L12 17.6 8.3 23.2H3.8c-.7 0-1.1-.6-.9-1.2l3.5-8.2c-2.1.3-4.7.1-4.7-1.4 0-2.3 5.4-3.7 8.1-4.2a3.7 3.7 0 0 1-1.5-3A3.7 3.7 0 0 1 12 1.5z';
+
+// =====================================================================
+//  Small helpers
+// =====================================================================
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const rand = n => Math.floor(Math.random() * n);
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rand(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const takeRandom = a => a.splice(rand(a.length), 1)[0];
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const key = (x, y) => x + ',' + y;
+const T = CONFIG.tileSize;
+const tokName = t => TOKEN_INFO[t].name;
+const strip = t => ({id: t.id, t: t.t});
+const store = {get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+               set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }};
+
+// =====================================================================
+//  Board geometry (pure functions on a state object)
+// =====================================================================
+let S = null;   // the game state. Host owns it; clients get copies.
+
+const parseNode = id => { const [x, y, i] = id.split(',').map(Number); return {x, y, i}; };
+const tileOf = id => { const {x, y} = parseNode(id); return [x, y]; };
+const nodeEdges = (tile, i) => TILE_TYPES[tile.t].nodes[i].edges.map(e => (e + tile.r) % 4);
+const nodeWithEdge = (tile, e) => TILE_TYPES[tile.t].nodes.findIndex((n, i) => nodeEdges(tile, i).includes(e));
+const nodeKind = id => { const {x, y, i} = parseNode(id); return TILE_TYPES[S.tiles[key(x, y)].t].nodes[i].kind; };
+const tileKeyOf = id => { const {x, y} = parseNode(id); return key(x, y); };
+function dist(a, b) {
+  const dx = Math.abs(a[0] - b[0]), dy = Math.abs(a[1] - b[1]);
+  return CONFIG.distance === 'chebyshev' ? Math.max(dx, dy) : dx + dy;
+}
+function neighbors(id) {
+  const {x, y, i} = parseNode(id), out = [];
+  for (const d of nodeEdges(S.tiles[key(x, y)], i)) {
+    const nx = x + DIRS[d][0], ny = y + DIRS[d][1], nt = S.tiles[key(nx, ny)];
+    if (!nt) continue;
+    const j = nodeWithEdge(nt, (d + 2) % 4);
+    if (j >= 0) out.push(`${nx},${ny},${j}`);
+  }
+  return out;
+}
+function reachable(from, steps) {         // nodes 1..steps moves away
+  const seen = new Set([from]); let ring = [from];
+  for (let s = 0; s < steps; s++) {
+    const next = [];
+    for (const n of ring) for (const m of neighbors(n)) if (!seen.has(m)) { seen.add(m); next.push(m); }
+    ring = next;
+  }
+  seen.delete(from);
+  return seen;
+}
+function roomNodes() {
+  const out = [];
+  for (const [k, tile] of Object.entries(S.tiles))
+    TILE_TYPES[tile.t].nodes.forEach((n, i) => { if (n.kind === 'room') out.push(`${k},${i}`); });
+  return out;
+}
+function revealCells(nodeId) {           // empty cells next to my tile through an open edge of my node
+  if (!S.deck.length) return [];
+  const {x, y, i} = parseNode(nodeId), out = [];
+  for (const d of nodeEdges(S.tiles[key(x, y)], i)) {
+    const nx = x + DIRS[d][0], ny = y + DIRS[d][1];
+    if (!S.tiles[key(nx, ny)]) out.push({x: nx, y: ny, d});
+  }
+  return out;
+}
+const placementConnects = pc => nodeWithEdge({t: pc.t, r: pc.r}, (pc.d + 2) % 4) >= 0;
+const doorOpen = () => Object.keys(S.buttons || {}).length >= CONFIG.buttonsToOpen;
+const P = id => S.players.find(p => p.id === id);
+const inPlay = p => !p.escaped && !p.eliminated;
+const eligible = p => inPlay(p) && !p.gone && (!S.countdown || (S.countdown.left[p.id] || 0) > 0);
+
+function exploreOptions(p) {
+  const kind = nodeKind(p.node);
+  return {
+    reveal: revealCells(p.node),
+    search: kind === 'room',
+    button: kind === 'button' && !S.buttons[tileKeyOf(p.node)],
+    exit: kind === 'start' && doorOpen(),
+  };
+}
+function bottleTargets(p) {
+  const here = tileOf(p.node);
+  return S.players.filter(q => q.id !== p.id && inPlay(q) && dist(here, tileOf(q.node)) <= CONFIG.bottleRange);
+}
+function findTok(p, tid) {
+  let tok = p.front.find(t => t.id === tid && !t.used);
+  if (tok) return {where: 'front', tok};
+  tok = p.pocket.find(t => t.id === tid);
+  return tok ? {where: 'pocket', tok} : null;
+}
+const treasureOf = p => [...p.bag, ...p.pocket, ...p.front].reduce((s, t) => s + CONFIG.tokens[t.t].value, 0);
+
+// =====================================================================
+//  HOST: rules. Only the host runs anything below this line that mutates S.
+// =====================================================================
+function log(txt) { S.log.push({i: ++S.logN, txt}); if (S.log.length > 40) S.log.shift(); }
+function makeTokens(spec) { const out = []; for (const [t, n] of Object.entries(spec)) for (let i = 0; i < n; i++) out.push({id: ++S.tid, t}); return out; }
+function mkPlayer(id, name) { return {id, name, color: '#888', node: null, bag: [], front: [], pocket: [], buttons: 0, escaped: false, eliminated: false, gone: false}; }
+function recolor() { S.players.forEach((p, i) => p.color = CONFIG.playerColors[i % CONFIG.playerColors.length]); }
+
+function newLobby(hostId, code, name) {
+  S = {v: 0, phase: 'lobby', hostId, code, players: [mkPlayer(hostId, name)], log: [], logN: 0, scareSeq: 0, tid: 0};
+  recolor();
+}
+
+function startGame() {
+  S.phase = 'play';
+  S.tiles = {'0,0': {t: 'start', r: 0}};
+  S.buttons = {}; S.dread = 0; S.countdown = null; S.scare = null; S.results = null;
+  const deck = [];
+  for (const [t, n] of Object.entries(CONFIG.deck)) for (let i = 0; i < n; i++) deck.push(t);
+  shuffle(deck);
+  for (let d = 0; d < 4; d++) {                 // one non-button tile on each side of the start
+    const idx = deck.findIndex(t => t !== 'button');
+    if (idx < 0) break;
+    const t = deck.splice(idx, 1)[0];
+    const rots = [0, 1, 2, 3].filter(r => placementConnects({t, r, d}));
+    S.tiles[key(DIRS[d][0], DIRS[d][1])] = {t, r: rots[rand(rots.length)]};
+  }
+  S.deck = shuffle(deck);
+  S.searchBag = makeTokens(CONFIG.searchBag);
+  recolor();
+  for (const p of S.players) Object.assign(p, {node: START_NODE, bag: makeTokens(CONFIG.startBag), front: [], pocket: [], buttons: 0, escaped: false, eliminated: false});
+  S.turn = {n: 0, pid: null};
+  log('The doors slam shut behind you.');
+  startTurn(S.players[CONFIG.randomFirstPlayer ? rand(S.players.length) : 0]);
+}
+
+function startTurn(p) {
+  S.turn = {n: S.turn.n + 1, pid: p.id, slippers: false, bottle: null, placing: null, over: false};
+  log(`${p.name}'s turn.`);
+}
+
+function nextTurn() {
+  const n = S.players.length, idx = S.players.findIndex(p => p.id === S.turn.pid);
+  for (let k = 1; k <= n; k++) {
+    const p = S.players[(idx + k) % n];
+    if (eligible(p)) return startTurn(p);
+  }
+  endGame();
+}
+
+function finishTurn(p, keepIds) {
+  const pc = S.turn.placing;
+  if (pc) { pc.r = [0, 1, 2, 3].find(r => placementConnects({...pc, r})); S.tiles[key(pc.x, pc.y)] = {t: pc.t, r: pc.r}; S.turn.placing = null; }
+  if (!p.escaped) {
+    const pool = [...p.front.filter(t => !t.used && TOKEN_INFO[t.t].pocket !== false), ...p.pocket];
+    const keep = keepIds ? pool.filter(t => keepIds.includes(t.id)).slice(0, CONFIG.pocketSize) : p.pocket.slice();
+    const kept = new Set(keep.map(t => t.id));
+    const all = [...p.front, ...p.pocket];
+    p.pocket = keep.map(strip);
+    p.bag.push(...all.filter(t => !kept.has(t.id)).map(strip));
+    p.front = [];
+  }
+  if (S.countdown && S.countdown.left[p.id] > 0) S.countdown.left[p.id]--;
+  nextTurn();
+}
+
+function endGame() {
+  S.phase = 'end';
+  S.results = S.players.map(p => {
+    const treasure = treasureOf(p);
+    return {id: p.id, name: p.name, color: p.color, escaped: p.escaped, eliminated: p.eliminated,
+            treasure, buttons: p.buttons, score: p.escaped ? treasure + p.buttons * CONFIG.buttonPoints : 0};
+  }).sort((a, b) => b.score - a.score || b.escaped - a.escaped);
+  log('The mansion falls silent.');
+}
+
+// Dread and the ghost --------------------------------------------------
+function addDread(n, culprit) {
+  if (n <= 0) return;
+  S.dread += n;
+  if (S.dread < CONFIG.dreadMax) return;
+  S.dread = 0;
+  let victim = culprit;
+  if (S.turn.bottle && culprit === S.turn.pid) {
+    const t = P(S.turn.bottle);
+    if (t && inPlay(t)) { victim = t.id; log(`The bottle shatters near ${t.name}: the ghost turns on them!`); }
+    S.turn.bottle = null;
+  }
+  jumpscare(victim);
+}
+
+function catchPlayer(pid, scare) {
+  const p = P(pid);
+  const hi = p.pocket.findIndex(t => t.t === 'hiding');
+  if (hi >= 0) { p.pocket.splice(hi, 1); log(`${p.name} ducks into a hiding spot. (Hiding spot removed.)`); return 'hid'; }
+  p.bag.push(...p.front.map(strip), ...p.pocket);
+  p.front = []; p.pocket = [];
+  const lost = [];
+  for (let k = 0; k < CONFIG.catchRemoves && p.bag.length; k++) lost.push(takeRandom(p.bag).t);
+  scare.lost[pid] = lost;
+  p.node = START_NODE;
+  log(`${p.name} is caught and loses ${lost.map(tokName).join(' and ') || 'nothing'}.`);
+  if (!p.bag.length) { p.eliminated = true; log(`${p.name}'s bag is empty. They are lost to the mansion.`); }
+  if (pid === S.turn.pid) S.turn.over = true;
+  return 'caught';
+}
+
+function jumpscare(victim) {
+  const scare = {seq: ++S.scareSeq, victim, hid: false, rounds: [], lost: {}};
+  log(`A JUMPSCARE! The ghost lunges at ${P(victim).name}.`);
+  const done = new Set([victim]);
+  const vpos = tileOf(P(victim).node);
+  const res = catchPlayer(victim, scare);
+  scare.hid = res === 'hid';
+  let frontier = res === 'caught' ? [vpos] : [];
+  while (frontier.length) {                // chase: spread from every newly caught player
+    const round = [], next = [];
+    for (const p of S.players) {
+      if (done.has(p.id) || !inPlay(p)) continue;
+      const pos = tileOf(p.node);
+      if (!frontier.some(f => dist(f, pos) <= CONFIG.chaseRange)) continue;
+      if (!p.bag.length) { round.push({pid: p.id, t: null, res: 'safe'}); continue; }
+      const tok = p.bag[rand(p.bag.length)];    // drawn and put straight back
+      let r = 'safe';
+      if (CONFIG.tokens[tok.t].noise > 0) { done.add(p.id); r = catchPlayer(p.id, scare); if (r === 'caught') next.push(pos); }
+      round.push({pid: p.id, t: tok.t, res: r});
+    }
+    if (round.length) scare.rounds.push(round);
+    frontier = next;
+  }
+  log('The ghost fades back into the walls.');
+  S.scare = scare;
+}
+
+function doSearch(p, times) {
+  for (let k = 0; k < times && !S.turn.over; k++) {
+    if (!S.searchBag.length) { log('The room has been picked clean. Nothing found.'); return; }
+    const tok = takeRandom(S.searchBag);
+    if (tok.t === 'noise') { S.searchBag.push(tok); log(`${p.name} knocks something over! (Noise)`); addDread(CONFIG.tokens.noise.noise, p.id); }
+    else { p.bag.push(tok); log(`${p.name} finds ${tokName(tok.t)}.`); }
+  }
+}
+
+function escape(p) {
+  p.bag.push(...p.front.map(strip));
+  p.front = []; p.escaped = true; p.node = null;
+  log(`${p.name} slips out through the front door!`);
+  if (!S.countdown) {
+    S.countdown = {by: p.id, left: {}};
+    for (const q of S.players) if (q.id !== p.id && inPlay(q)) S.countdown.left[q.id] = CONFIG.finalTurns;
+    log(`Everyone else has ${CONFIG.finalTurns} more turns to get out.`);
+  }
+  S.turn.over = true;
+}
+
+// Returns an error string if the action is illegal (nothing is changed in that case).
+function useToken(p, pl) {
+  const loc = findTok(p, pl.tid);
+  if (!loc || !TOKEN_INFO[loc.tok.t].use) return 'not usable';
+  const t = loc.tok.t, here = p.node;
+  const consume = () => {
+    if (loc.where === 'pocket') { p.pocket.splice(p.pocket.indexOf(loc.tok), 1); p.front.push({...loc.tok, used: true}); }
+    else loc.tok.used = true;
+  };
+  switch (t) {
+    case 'boot': case 'sneakers': {
+      if (!reachable(here, t === 'boot' ? 1 : CONFIG.sneakersSteps).has(pl.to)) return 'bad move';
+      consume(); p.node = pl.to; return;
+    }
+    case 'map': {
+      if (pl.to === here || !roomNodes().includes(pl.to)) return 'bad room';
+      consume(); p.node = pl.to; log(`${p.name} follows a secret map.`); return;
+    }
+    case 'explore': {
+      const o = exploreOptions(p);
+      if (pl.mode === 'reveal') {
+        const c = o.reveal.find(c => c.x === pl.x && c.y === pl.y);
+        if (!c) return 'bad cell';
+        consume();
+        const pc = {t: S.deck.pop(), x: c.x, y: c.y, d: c.d, r: 0};
+        pc.r = [0, 1, 2, 3].find(r => placementConnects({...pc, r}));
+        S.turn.placing = pc;
+        log(`${p.name} opens a door into the dark…`);
+        return;
+      }
+      if (pl.mode === 'search' && o.search) { consume(); log(`${p.name} searches the room.`); doSearch(p, 1); return; }
+      if (pl.mode === 'button' && o.button) {
+        consume(); S.buttons[tileKeyOf(here)] = p.id; p.buttons++;
+        log(`${p.name} presses a button. Something clunks deep in the walls.`);
+        if (doorOpen()) log('The front door groans open.');
+        return;
+      }
+      if (pl.mode === 'exit' && o.exit) { consume(); escape(p); return; }
+      return 'bad explore';
+    }
+    case 'bottle': {
+      const q = bottleTargets(p).find(q => q.id === pl.target);
+      if (!q) return 'bad target';
+      consume(); S.turn.bottle = q.id; log(`${p.name} readies a bottle, eyeing ${q.name}.`); return;
+    }
+    case 'slippers': consume(); S.turn.slippers = true; log(`${p.name} pulls on soft slippers.`); return;
+    case 'crowbar': {
+      if (nodeKind(here) !== 'room') return 'need room';
+      consume(); log(`${p.name} prises the room open with a crowbar.`);
+      addDread(CONFIG.crowbarDread, p.id);
+      doSearch(p, CONFIG.crowbarSearches);
+      return;
+    }
+  }
+  return 'unknown token';
+}
+
+function turnAction(p, type, pl) {
+  const pc = S.turn.placing;
+  if (type === 'rotate') { if (!pc) return 'not placing'; pc.r = (pc.r + (pl.dir === -1 ? 3 : 1)) % 4; return; }
+  if (type === 'place') {
+    if (!pc) return 'not placing';
+    if (!placementConnects(pc)) return 'does not connect';
+    S.tiles[key(pc.x, pc.y)] = {t: pc.t, r: pc.r}; S.turn.placing = null;
+    log(`${p.name} reveals: ${TILE_TYPES[pc.t].name}.`);
+    return;
+  }
+  if (pc) return 'place the tile first';
+  if (type === 'draw') {
+    if (!p.bag.length) return 'bag empty';
+    const tok = takeRandom(p.bag);
+    if (tok.t === 'noise' && S.turn.slippers) {
+      S.turn.slippers = false;
+      log(`${p.name}'s slippers muffle a Noise. It is removed from the game.`);
+      return;
+    }
+    p.front.push({...tok, used: tok.t === 'noise'});
+    log(`${p.name} draws ${tokName(tok.t)}.`);
+    addDread(CONFIG.tokens[tok.t].noise, p.id);
+    return;
+  }
+  if (type === 'use') return useToken(p, pl);
+  if (type === 'end') { finishTurn(p, Array.isArray(pl.keep) ? pl.keep : []); return; }
+  return 'unknown action';
+}
+
+function hostAction(pid, a) {
+  if (!a || typeof a.type !== 'string') return;
+  if (S.phase === 'lobby') {
+    if (a.type !== 'start' || pid !== S.hostId || S.players.length < CONFIG.minPlayers) return;
+    startGame();
+  } else if (S.phase === 'play') {
+    if (pid !== S.turn.pid) return;
+    const p = P(pid);
+    const err = turnAction(p, a.type, a.payload || {});
+    if (err) { console.warn('Rejected action', a, err); return; }
+    if (S.turn.over) finishTurn(p, null);
+  } else return;
+  publish();
+}
+
+function hostHello(id, d) {
+  const name = String(d?.name || '').trim().slice(0, 16) || 'Stranger';
+  if (S.phase === 'lobby' && !P(id) && S.players.length < CONFIG.maxPlayers) {
+    S.players.push(mkPlayer(id, name)); recolor();
+    log(`${name} joined.`);
+    publish();
+  } else net.state.send(S, {target: id});   // late joiners / full room just get to watch
+}
+
+function hostPeerLeft(id) {
+  const p = P(id);
+  if (!p) return;
+  if (S.phase === 'lobby') { S.players = S.players.filter(q => q.id !== id); recolor(); log(`${p.name} left.`); }
+  else {
+    p.gone = true;
+    log(`${p.name} disconnected.`);
+    if (S.phase === 'play') {
+      if (S.turn.pid === id) finishTurn(p, null);
+      else if (!S.players.some(eligible)) endGame();
+    }
+  }
+  publish();
+}
+
+// =====================================================================
+//  NETWORK (Trystero, host-authoritative)
+// =====================================================================
+const net = {room: null, mod: null, self: null, isHost: false, hostId: null, state: null, action: null, strat: 'nostr', hostGone: false};
+
+async function loadStrategy(name) {
+  try { return [name, await import(CONFIG.strategies[name])]; }
+  catch (e) {
+    if (name === 'torrent') throw e;
+    console.warn('Nostr strategy failed to load, falling back to BitTorrent', e);
+    return ['torrent', await import(CONFIG.strategies.torrent)];
+  }
+}
+
+async function connect(code, asHost) {
+  const name = myName();
+  $('#lobbyErr').textContent = 'Lighting a candle…';
+  let mod;
+  try { [net.strat, mod] = await loadStrategy($('#inStrat').value); }
+  catch (e) { $('#lobbyErr').textContent = 'Could not load the network library. Check your connection.'; return; }
+  $('#lobbyErr').textContent = '';
+  net.mod = mod; net.self = mod.selfId; net.isHost = asHost; net.code = code;
+  const room = mod.joinRoom({appId: CONFIG.appId}, code);
+  net.room = room;
+  const hello = room.makeAction('hello');
+  net.action = room.makeAction('action');
+  net.state = room.makeAction('state');
+
+  room.onPeerJoin = id => { if (!net.isHost) hello.send({name}, {target: id}); netStatus(); };
+  room.onPeerLeave = id => {
+    if (net.isHost) hostPeerLeft(id);
+    else if (id === net.hostId) { net.hostGone = true; render(); }
+    netStatus();
+  };
+  hello.onMessage = (d, {peerId}) => { if (net.isHost) hostHello(peerId, d); };
+  net.action.onMessage = (d, {peerId}) => { if (net.isHost) hostAction(peerId, d); };
+  net.state.onMessage = (d, {peerId}) => {
+    if (net.isHost || !d || d.hostId !== peerId) return;
+    if (net.hostId && net.hostId !== peerId) return;
+    net.hostId = peerId;
+    if (S && d.v < S.v) return;
+    S = d; onState();
+  };
+
+  if (asHost) { newLobby(net.self, code, name); net.hostId = net.self; onState(); }
+  $('#lobbyStart').hidden = true; $('#lobbyRoom').hidden = false;
+  $('#roomCode').textContent = code;
+  if (!asHost) $('#lobbyMsg').textContent = 'Looking for the host in the dark…';
+  setInterval(netStatus, 1000); netStatus();
+  render();
+}
+
+function publish() { S.v++; net.state.send(S); onState(); }
+
+function send(type, payload = {}) {
+  if (net.isHost) hostAction(net.self, {type, payload});
+  else if (net.hostId) net.action.send({type, payload}, {target: net.hostId});
+}
+
+function netStatus() {
+  if (!net.room) return;
+  let socks = {};
+  try { socks = net.mod.getRelaySockets?.() || {}; } catch {}
+  const all = Object.values(socks), open = all.filter(w => w && w.readyState === 1).length;
+  const peers = Object.keys(net.room.getPeers?.() || {}).length;
+  const relay = all.length ? `${open}/${all.length} relays` : 'relays…';
+  const word = open ? 'connected' : 'connecting';
+  const txt = `${word} · <b>${relay}</b> · <b>${peers}</b> peer${peers === 1 ? '' : 's'} · ${net.strat}`;
+  $('#netStatus').innerHTML = txt + (!open && all.length ? '<br>No relay reachable yet. If this persists, both sides can try BitTorrent.' : '');
+  net.statusText = `${peers} peer${peers === 1 ? '' : 's'} · ${relay}`;
+  const el = $('#netMini'); if (el) el.textContent = net.statusText;
+}
+
+function myName() {
+  const n = $('#inName').value.trim().slice(0, 16) || 'Stranger';
+  store.set('hm-name', n);
+  return n;
+}
+function makeCode() {
+  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  return Array.from({length: CONFIG.roomCodeLength}, () => A[rand(A.length)]).join('');
+}
+
+// =====================================================================
+//  UI (renders only from S + local, non-game UI state)
+// =====================================================================
+const ui = {mode: null, tid: null, targets: null, menu: null, flash: '', turnN: null, scareSeen: null, endOpen: false, keep: new Set()};
+const view = {x: 0, y: 0, z: 1, init: false};
+const me = () => S && S.players && S.players.find(p => p.id === net.self);
+const myTurn = () => S && S.phase === 'play' && S.turn.pid === net.self;
+
+function onState() {
+  if (ui.scareSeen === null) ui.scareSeen = S.scareSeq || 0;
+  if (S.phase === 'play' && S.turn.n !== ui.turnN) {
+    ui.turnN = S.turn.n; resetMode(); ui.endOpen = false;
+    if (myTurn()) flashBanner('your turn');
+  }
+  if (S.scare && S.scare.seq > ui.scareSeen) { ui.scareSeen = S.scare.seq; queueScare(S.scare); }
+  // a token we were aiming with may be gone now
+  if (ui.tid && (!me() || !findTok(me(), ui.tid))) resetMode();
+  render();
+}
+
+function resetMode() { ui.mode = null; ui.tid = null; ui.targets = null; ui.menu = null; }
+
+function render() {
+  const inGame = S && S.phase !== 'lobby';
+  $('#lobby').hidden = inGame; $('#game').hidden = !inGame;
+  if (!inGame) renderLobby(); else renderGame();
+  renderModal();
+}
+
+function meepleSVG(color, size = 18) {
+  return `<svg class="mee" viewBox="0 0 24 24" width="${size}" height="${size}"><path d="${MEEPLE_D}" fill="${color}"/></svg>`;
+}
+
+function renderLobby() {
+  if (!S) return;
+  $('#lobbyPlayers').innerHTML = S.players.map(p =>
+    `<li>${meepleSVG(p.color)}<span>${esc(p.name)}</span>${p.id === S.hostId ? '<span class="you">host</span>' : ''}${p.id === net.self ? '<span class="you">you</span>' : ''}</li>`).join('');
+  const n = S.players.length;
+  $('#bStart').hidden = !net.isHost;
+  $('#bStart').disabled = n < CONFIG.minPlayers;
+  $('#lobbyMsg').textContent = net.isHost
+    ? (n < CONFIG.minPlayers ? `Share the code. Waiting for at least ${CONFIG.minPlayers} players…` : `${n} players. Start when everyone is in.`)
+    : (me() ? 'Waiting for the host to start…' : 'Room is full or already playing.');
+}
+
+function renderGame() {
+  renderTop();
+  renderWorld();
+  renderHint();
+  renderLog();
+  renderMe();
+  renderMenu();
+  if (!view.init) { view.init = true; requestAnimationFrame(() => centerOn(T / 2, T / 2)); }
+}
+
+function renderTop() {
+  $('#players').innerHTML = S.players.map(p => {
+    const on = S.phase === 'play' && S.turn.pid === p.id;
+    const st = p.escaped ? 'escaped' : p.eliminated ? 'lost' : p.gone ? 'disconnected' : '';
+    const left = S.countdown && S.countdown.left[p.id] != null && inPlay(p) ? ` · ${S.countdown.left[p.id]} left` : '';
+    const btn = p.buttons ? ' · ' + '●'.repeat(p.buttons) : '';
+    const mini = on ? `<span class="mini">${p.front.map(t => `<svg viewBox="0 0 56.69 56.69" class="${t.used ? 'u' : ''}">${ICONS[t.t]}</svg>`).join('')}</span>` : '';
+    return `<div class="pchip ${on ? 'on' : ''} ${st ? 'out' : ''}" title="${esc(p.name)}">${meepleSVG(p.color)}<div><b>${esc(p.name)}${p.id === net.self ? ' (you)' : ''}</b><div class="st">${st || `bag ${p.bag.length} · pocket ${p.pocket.length}`}${btn}${left}</div></div>${mini}</div>`;
+  }).join('');
+  const lvl = S.dread || 0, f = lvl / CONFIG.dreadMax;
+  const col = `rgb(${Math.round(58 + f * 82)},${Math.round(58 - f * 50)},${Math.round(58 - f * 50)})`;
+  $('#dread').innerHTML = Array.from({length: CONFIG.dreadMax}, (_, i) =>
+    i < lvl ? `<i class="f" style="background:${col};box-shadow:0 0 ${4 + f * 14}px ${col}"></i>` : '<i></i>').join('');
+  $('#dread').classList.toggle('hot', lvl >= CONFIG.dreadMax - 1);
+  const pressed = Object.keys(S.buttons || {}).length;
+  $('#info').innerHTML = `<div>room <b>${esc(S.code)}</b> · <span id="netMini">${esc(net.statusText || '')}</span></div>
+    <div>tiles left <b>${S.deck.length}</b> · search bag <b>${S.searchBag.length}</b></div>
+    <div>${doorOpen() ? '<span class="open">the front door is OPEN</span>' : `door sealed · buttons <b>${pressed}/${CONFIG.buttonsToOpen}</b>`}</div>`;
+}
+
+// ---- map ---------------------------------------------------------------
+const rotPt = (ax, ay, r) => { let dx = ax - 64, dy = ay - 64; for (let k = 0; k < r; k++) [dx, dy] = [-dy, dx]; return [64 + dx, 64 + dy]; };
+function nodePos(id) {
+  const {x, y, i} = parseNode(id), tile = S.tiles[key(x, y)];
+  const [ax, ay] = rotPt(...TILE_TYPES[tile.t].nodes[i].at, tile.r);
+  return [x * T + ax, y * T + ay];
+}
+function shapesOf(t) {      // corridors first so room floors are painted over them
+  const all = TILE_TYPES[t].nodes.flatMap(n => n.shapes);
+  return [...all.filter(s => s[0] === 'c'), ...all.filter(s => s[0] !== 'c')].map(s =>
+    s[0] === 'c' ? `<path class="c" d="${s[1]}"/>` :
+    s[0] === 'r' ? `<rect class="r" x="${s[1]}" y="${s[2]}" width="${s[3]}" height="${s[4]}"/>` :
+                   `<polygon class="r" points="${s[1]}"/>`).join('');
+}
+function decoOf(t, x, y) {
+  let s = TILE_TYPES[t].nodes.flatMap(n => n.shapes).filter(sh => sh[0] === 'c').map(sh => `<path class="cl" d="${sh[1]}"/>`).join('');
+  const h = ((x * 73856093) ^ (y * 19349663)) >>> 0;
+  TILE_TYPES[t].nodes.forEach((n, i) => n.shapes.forEach(sh => {
+    if (sh[0] !== 'r' || (h + i) % 3) return;     // cobweb in some room corners
+    const [cx, cy] = [sh[1], sh[2]];
+    s += `<path class="web" d="M${cx} ${cy}l15 0M${cx} ${cy}l0 15M${cx} ${cy}l11 11M${cx + 6} ${cy}q0 6-6 6M${cx + 11} ${cy}q-1 10-11 11M${cx + 15} ${cy}q-2 14-15 15"/>`;
+  }));
+  if (t === 'start') {
+    const open = doorOpen();
+    s += `<path class="door ${open ? 'open' : ''}" d="M53 84V58a11 11 0 0 1 22 0V84Z"/><path d="M64 50V84" stroke="#000" stroke-width="1"/>
+          <text class="doortxt ${open ? 'open' : ''}" x="64" y="98">${open ? 'EXIT' : 'SEALED'}</text>`;
+  }
+  if (t === 'button') {
+    const on = !!S.buttons[key(x, y)];
+    s += `<g class="btn ${on ? 'on' : ''}"><circle class="btnring" cx="64" cy="64" r="13"/><circle class="btndot" cx="64" cy="64" r="6.5"/></g>`;
+  }
+  return s;
+}
+function tileLayers(t, x, y, r) {
+  const tr = `translate(${x * T} ${y * T}) rotate(${r * 90} 64 64)`, sh = shapesOf(t);
+  return {g: `<g transform="${tr}">${sh}</g>`, d: `<g transform="${tr}">${decoOf(t, x, y)}</g>`};
+}
+
+function renderWorld() {
+  let g = '', deco = '';
+  for (const [k, tile] of Object.entries(S.tiles)) {
+    const [x, y] = k.split(',').map(Number), L = tileLayers(tile.t, x, y, tile.r);
+    g += L.g; deco += L.d;
+  }
+  let html = `<g class="lg1">${g}</g><g class="lg2">${g}</g><g class="ll">${g}</g><g class="lf">${g}</g><g>${deco}</g>`;
+
+  // tile being placed
+  const pc = S.phase === 'play' && S.turn.placing;
+  if (pc) {
+    const L = tileLayers(pc.t, pc.x, pc.y, pc.r), ok = placementConnects(pc);
+    html += `<g class="preview ${ok ? '' : 'bad'}" data-rot="1"><rect class="frame" x="${pc.x * T + 1}" y="${pc.y * T + 1}" width="${T - 2}" height="${T - 2}"/>
+      <g class="lg2">${L.g}</g><g class="ll">${L.g}</g><g class="lf">${L.g}</g><g>${L.d}</g></g>`;
+  }
+
+  // meeples
+  const groups = {};
+  for (const p of S.players) if (p.node && inPlay(p)) (groups[p.node] ||= []).push(p);
+  for (const [node, ps] of Object.entries(groups)) {
+    const [nx, ny] = nodePos(node), rad = ps.length > 1 ? (nodeKind(node) === 'start' ? 24 : 11) : 0;
+    ps.forEach((p, i) => {
+      const a = (i / ps.length) * Math.PI * 2 - Math.PI / 2;
+      const px = nx + Math.cos(a) * rad, py = ny + Math.sin(a) * rad;
+      const act = S.phase === 'play' && S.turn.pid === p.id;
+      html += `<g class="mee ${act ? 'act' : ''}" transform="translate(${px - 10} ${py - 13}) scale(.84)"><path class="body" d="${MEEPLE_D}" fill="${p.color}"/></g>`;
+    });
+  }
+
+  // click targets
+  const tg = computeTargets();
+  for (const c of tg.cells)
+    html += `<rect class="cellt ${tg.soft ? 'soft' : ''}" data-cell="${c.x},${c.y}" x="${c.x * T + 6}" y="${c.y * T + 6}" width="${T - 12}" height="${T - 12}"/><text class="celltxt" x="${c.x * T + 64}" y="${c.y * T + 74}">?</text>`;
+  for (const [node] of tg.moves) {
+    const [x, y] = nodePos(node);
+    html += `<circle class="tgt ${tg.soft ? 'soft' : ''}" data-node="${node}" cx="${x}" cy="${y}" r="14"/>`;
+  }
+  for (const a of tg.acts) {
+    const [x, y] = nodePos(a.node);
+    html += `<circle class="tgt" data-act="${a.mode}" cx="${x}" cy="${y}" r="22" style="stroke-dasharray:4 4"/><text class="acttxt" x="${x}" y="${y + 34}">${a.label}</text>`;
+  }
+  $('#world').innerHTML = html;
+  applyView();
+}
+
+// What can I click on the map right now?
+function computeTargets() {
+  const out = {moves: new Map(), cells: [], acts: [], soft: false};
+  const p = me();
+  if (!myTurn() || !p || S.turn.placing || ui.menu) return out;
+  if (ui.mode === 'move') { for (const n of ui.targets) out.moves.set(n, ui.tid); return out; }
+  if (ui.mode === 'reveal') { out.cells = exploreOptions(p).reveal; return out; }
+  // default: quick actions with the first matching token in front of you (then pocket)
+  out.soft = true;
+  const boot = firstTok(p, 'boot'), ex = firstTok(p, 'explore');
+  if (boot) for (const n of reachable(p.node, 1)) out.moves.set(n, boot.id);
+  if (ex) {
+    const o = exploreOptions(p);
+    out.cells = o.reveal;
+    if (o.search) out.acts.push({node: p.node, mode: 'search', label: 'SEARCH'});
+    if (o.button) out.acts.push({node: p.node, mode: 'button', label: 'PRESS'});
+    if (o.exit) out.acts.push({node: p.node, mode: 'exit', label: 'ESCAPE'});
+  }
+  return out;
+}
+const firstTok = (p, t) => p.front.find(x => x.t === t && !x.used) || p.pocket.find(x => x.t === t);
+
+function applyView() { $('#world').setAttribute('transform', `translate(${view.x} ${view.y}) scale(${view.z})`); }
+function centerOn(wx, wy) {
+  const r = $('#map').getBoundingClientRect();
+  view.x = r.width / 2 - wx * view.z; view.y = r.height / 2 - wy * view.z; applyView();
+}
+
+// ---- hint, log, my area -------------------------------------------------
+function renderHint() {
+  const p = me(), cur = S.phase === 'play' && P(S.turn.pid);
+  let h = '';
+  if (S.phase === 'end') h = 'The night is over.';
+  else if (!p) h = `You are watching. ${cur ? esc(cur.name) + "'s turn." : ''}`;
+  else if (!myTurn()) h = p.escaped ? `You escaped. Waiting for the others… (${esc(cur.name)}'s turn)`
+    : p.eliminated ? `The mansion has you. ${esc(cur.name)}'s turn.` : `${esc(cur.name)} is creeping through the dark…`;
+  else if (S.turn.placing) {
+    const ok = placementConnects(S.turn.placing);
+    h = `<span class="me">Rotate the ${esc(TILE_TYPES[S.turn.placing.t].name)} so a path meets yours, then place it.</span>
+      <div class="row"><button data-k="rotl">⟲</button><button data-k="rotr">⟳</button><button data-k="place" class="primary" ${ok ? '' : 'disabled'}>Place tile</button></div>
+      ${ok ? '' : '<span class="flash">This way round it does not connect.</span>'}`;
+  }
+  else if (ui.mode === 'move') h = `<span class="me">Choose where to go.</span> (Esc to cancel)`;
+  else if (ui.mode === 'reveal') h = `<span class="me">Choose a doorway to explore through.</span> (Esc to cancel)`;
+  else {
+    const fx = [];
+    if (S.turn.slippers) fx.push('slippers on');
+    if (S.turn.bottle) fx.push(`bottle aimed at ${esc(P(S.turn.bottle)?.name || '?')}`);
+    h = `<span class="me">Your turn.</span> Draw, use a token, or end your turn.${fx.length ? '<br>' + fx.join(' · ') : ''}`;
+  }
+  if (ui.flash) h += `<span class="flash">${esc(ui.flash)}</span>`;
+  $('#hint').innerHTML = h;
+}
+
+function renderLog() {
+  const last = S.log.slice(-7);
+  $('#log').innerHTML = last.map((l, i) => `<div style="opacity:${(0.25 + 0.75 * (i + 1) / last.length).toFixed(2)}">${esc(l.txt)}</div>`).join('');
+}
+
+function discHTML(tok, cls = '') {
+  const info = TOKEN_INFO[tok.t], n = CONFIG.tokens[tok.t].noise;
+  const tip = `${info.name}: ${info.desc}`;
+  return `<button class="disc ${cls}" data-tid="${tok.id}" title="${esc(tip)}"><span class="face"><svg viewBox="0 0 56.69 56.69">${ICONS[tok.t]}</svg></span><span class="dn">${info.name}</span>${n ? `<span class="pips">${'!'.repeat(n)}</span>` : ''}</button>`;
+}
+
+function renderMe() {
+  const p = me(), mine = myTurn();
+  $('#me').hidden = !p;
+  if (!p) return;
+  const busy = mine && !!S.turn.placing;
+  $('#bDraw').disabled = !mine || busy || !p.bag.length;
+  $('#bDraw').textContent = p.bag.length ? `Draw (${p.bag.length})` : 'Bag empty';
+  $('#bEnd').disabled = !mine || busy;
+  const cls = t => {
+    const usable = mine && !busy && TOKEN_INFO[t.t].use && !t.used;
+    return [t.used ? 'used' : '', usable ? 'use' : 'idle', ui.tid === t.id ? 'sel' : ''].join(' ');
+  };
+  $('#front').innerHTML = p.front.length ? p.front.map(t => discHTML(t, cls(t))).join('') : '<span style="color:var(--dim);font-size:12px">nothing drawn yet</span>';
+  $('#pocket').innerHTML = p.pocket.map(t => discHTML(t, cls(t))).join('') + '<span class="slot"></span>'.repeat(Math.max(0, CONFIG.pocketSize - p.pocket.length));
+  const counts = {};
+  for (const t of p.bag) counts[t.t] = (counts[t.t] || 0) + 1;
+  $('#bagN').textContent = `(${p.bag.length})`;
+  $('#bag').innerHTML = TOKEN_ORDER.filter(t => counts[t]).map(t => `<div>${TOKEN_INFO[t].name} <span>×${counts[t]}</span></div>`).join('') || '<span>empty</span>';
+}
+
+function renderMenu() {
+  const m = ui.menu, el = $('#menu');
+  el.hidden = !m;
+  if (!m) return;
+  el.innerHTML = `<h3>${esc(m.title)}</h3>` + m.items.map(it =>
+    `<button data-opt="${esc(it.id)}" ${it.ok ? '' : 'disabled'}>${esc(it.label)}${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</button>`).join('') +
+    `<button data-opt="cancel" class="ghostbtn">cancel</button>`;
+}
+
+// Modal: end-turn pocket choice, end screen, host left.
+function renderModal() {
+  const veil = $('#veil'), panel = $('#panel');
+  if (chaseOpen) return;
+  let h = '';
+  if (net.hostGone) h = `<h2>Host left, game over</h2><p>The candle goes out. The host's browser held the mansion, and it is gone.</p><div class="btns"><button data-k="home" class="primary">Back to the lobby</button></div>`;
+  else if (S && S.phase === 'end') {
+    const best = S.results.find(r => r.escaped);
+    const winners = best ? S.results.filter(r => r.escaped && r.score === best.score) : [];
+    h = `<h2>${winners.length ? esc(winners.map(w => w.name).join(' & ')) + (winners.length > 1 ? ' tie' : ' wins') : 'Nobody escaped'}</h2>
+      <p>${winners.length ? 'Out in the cold night air, they count their spoils.' : 'The mansion keeps every one of you.'}</p>
+      <table class="score">${S.results.map(r => `<tr class="${winners.includes(r) ? 'win' : ''}"><td>${meepleSVG(r.color, 14)} ${esc(r.name)}</td>
+        <td>${r.escaped ? `treasure ${r.treasure} + buttons ${r.buttons}×${CONFIG.buttonPoints}` : r.eliminated ? 'lost to the mansion' : 'still inside'}</td><td class="n">${r.score}</td></tr>`).join('')}</table>
+      <div class="btns"><button data-k="home" class="primary">Leave</button></div>`;
+  }
+  else if (ui.endOpen && myTurn()) {
+    const p = me();
+    const pool = [...p.front.filter(t => !t.used && TOKEN_INFO[t.t].pocket !== false), ...p.pocket];
+    h = `<h2>Into your pocket</h2><p>Keep up to ${CONFIG.pocketSize} unused tokens for a later turn. Everything else goes back in your bag.</p>
+      <div class="discs">${pool.map(t => discHTML(t, 'use ' + (ui.keep.has(t.id) ? 'keep sel' : ''))).join('') || '<span style="color:var(--dim)">Nothing to keep.</span>'}</div>
+      <div class="btns"><button data-k="endcancel" class="ghostbtn">back</button><button data-k="endok" class="primary">End turn</button></div>`;
+  }
+  veil.hidden = !h;
+  if (h) panel.innerHTML = h;
+}
+
+function flashBanner(txt) {
+  const b = $('#banner'); b.textContent = txt; b.classList.remove('go'); void b.offsetWidth; b.classList.add('go');
+}
+let flashTimer = null;
+function flash(msg) { ui.flash = msg; render(); clearTimeout(flashTimer); flashTimer = setTimeout(() => { ui.flash = ''; render(); }, 2200); }
+
+// ---- jumpscare + chase reveal ------------------------------------------
+const scareQ = []; let scarePlaying = false, chaseOpen = false;
+function queueScare(sc) { scareQ.push(JSON.parse(JSON.stringify({sc, names: Object.fromEntries(S.players.map(p => [p.id, p.name]))}))); if (!scarePlaying) playScares(); }
+async function playScares() {
+  scarePlaying = true;
+  while (scareQ.length) {
+    const {sc, names} = scareQ.shift();
+    const ov = $('#scare');
+    ov.hidden = false; ov.className = '';
+    await wait(CONFIG.scareMs * 0.16);
+    ov.classList.add('ghost'); document.body.classList.add('shake');
+    await wait(CONFIG.scareMs * 0.58);
+    document.body.classList.remove('shake'); ov.classList.add('out');
+    await wait(CONFIG.scareMs * 0.26);
+    ov.hidden = true; ov.className = '';
+
+    chaseOpen = true;
+    const veil = $('#veil'), panel = $('#panel');
+    veil.hidden = false;
+    panel.innerHTML = `<h2>The ghost</h2><div id="chaseLines"></div><div class="btns"><button data-k="chaseok" class="primary" hidden>Continue</button></div>`;
+    const lines = $('#chaseLines');
+    const add = (txt, cls = '') => { const d = document.createElement('div'); d.className = cls; d.textContent = txt; lines.appendChild(d); };
+    const lost = id => sc.lost[id] ? ` Lost forever: ${sc.lost[id].map(tokName).join(', ') || 'nothing'}.` : '';
+    add(sc.hid ? `It reaches for ${names[sc.victim]}… who is hiding. Safe.` : `It seizes ${names[sc.victim]}!${lost(sc.victim)}`, sc.hid ? '' : 'bad');
+    for (const round of sc.rounds) {
+      await wait(CONFIG.chaseStepMs * 0.6);
+      add('It hunts nearby…', 'dimmed');
+      for (const d of round) {
+        await wait(CONFIG.chaseStepMs);
+        const drew = d.t ? tokName(d.t) : 'nothing';
+        if (d.res === 'caught') add(`${names[d.pid]} draws ${drew}: CAUGHT.${lost(d.pid)}`, 'bad');
+        else if (d.res === 'hid') add(`${names[d.pid]} draws ${drew}… but hides in time.`);
+        else add(`${names[d.pid]} draws ${drew}: holds their breath. Safe.`);
+      }
+    }
+    await wait(CONFIG.chaseStepMs * 0.6);
+    add('The ghost fades back into the walls.', 'dimmed');
+    const btn = panel.querySelector('[data-k="chaseok"]'); btn.hidden = false;
+    await new Promise(res => { btn.onclick = res; setTimeout(res, 6000); });
+    chaseOpen = false; veil.hidden = true;
+    render();
+  }
+  scarePlaying = false;
+}
+
+// ---- token selection -----------------------------------------------------
+function selectToken(tid) {
+  const p = me();
+  if (!myTurn() || S.turn.placing) return;
+  if (ui.tid === tid) { resetMode(); return render(); }
+  const loc = findTok(p, tid);
+  if (!loc) return;
+  const t = loc.tok.t;
+  resetMode();
+  if (!TOKEN_INFO[t].use) return flash(`${TOKEN_INFO[t].name}: ${TOKEN_INFO[t].desc}`);
+  ui.tid = tid;
+  if (t === 'boot' || t === 'sneakers' || t === 'map') {
+    const targets = t === 'map' ? roomNodes().filter(n => n !== p.node) : [...reachable(p.node, t === 'boot' ? 1 : CONFIG.sneakersSteps)];
+    if (!targets.length) { resetMode(); return flash(t === 'map' ? 'There are no other rooms on the map yet.' : 'There is nowhere to go from here.'); }
+    ui.mode = 'move'; ui.targets = targets;
+  } else if (t === 'explore') {
+    const o = exploreOptions(p);
+    ui.menu = {title: 'Explore', items: [
+      {id: 'reveal', label: 'Reveal a tile', ok: o.reveal.length > 0, sub: o.reveal.length ? `${o.reveal.length} unexplored doorway${o.reveal.length > 1 ? 's' : ''}` : (S.deck.length ? 'no unexplored doorway from here' : 'no tiles left')},
+      {id: 'search', label: 'Search this room', ok: o.search, sub: o.search ? `${S.searchBag.length} things left to find` : 'stand in a room'},
+      {id: 'button', label: 'Press the button', ok: o.button, sub: o.button ? `${CONFIG.buttonPoints} points` : 'stand on an unpressed button'},
+      {id: 'exit', label: 'Escape through the front door', ok: o.exit, sub: doorOpen() ? 'stand in the entrance hall' : 'the door is sealed'},
+    ]};
+  } else if (t === 'bottle') {
+    const ts = bottleTargets(p);
+    if (!ts.length) { resetMode(); return flash(`Nobody within ${CONFIG.bottleRange} tiles to throw it at.`); }
+    ui.menu = {title: 'Throw the bottle near…', items: ts.map(q => ({id: q.id, label: q.name, ok: true}))};
+  } else if (t === 'slippers') { resetMode(); send('use', {tid}); return; }
+  else if (t === 'crowbar') {
+    resetMode();
+    if (nodeKind(p.node) !== 'room') return flash('The crowbar needs a room to search.');
+    send('use', {tid}); return;
+  }
+  render();
+}
+
+function menuPick(opt) {
+  const tid = ui.tid, isBottle = ui.menu && ui.menu.title.startsWith('Throw');
+  if (opt === 'cancel') { resetMode(); return render(); }
+  ui.menu = null;
+  if (isBottle) { resetMode(); return send('use', {tid, target: opt}); }
+  if (opt === 'reveal') { ui.mode = 'reveal'; return render(); }
+  resetMode(); send('use', {tid, mode: opt});
+}
+
+// ---- input ---------------------------------------------------------------
+let drag = null, dragMoved = false;
+const mapEl = $('#map');
+mapEl.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  drag = {sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false};
+});
+window.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+  if (!drag.moved && Math.hypot(dx, dy) > 5) { drag.moved = true; mapEl.classList.add('dragging'); }
+  if (drag.moved) { view.x = drag.vx + dx; view.y = drag.vy + dy; applyView(); }
+});
+window.addEventListener('pointerup', () => { if (drag) { dragMoved = drag.moved; mapEl.classList.remove('dragging'); } drag = null; });
+mapEl.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = mapEl.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+  const z = Math.min(2.2, Math.max(0.35, view.z * (e.deltaY < 0 ? 1.1 : 1 / 1.1)));
+  view.x = mx - (mx - view.x) * z / view.z; view.y = my - (my - view.y) * z / view.z; view.z = z; applyView();
+}, {passive: false});
+
+mapEl.addEventListener('click', e => {
+  if (dragMoved) { dragMoved = false; return; }
+  if (!myTurn()) return;
+  const el = e.target.closest('[data-node],[data-cell],[data-act],[data-rot]');
+  if (!el) { if (ui.mode) { resetMode(); render(); } return; }
+  if (el.dataset.rot) return send('rotate', {dir: 1});
+  const p = me();
+  if (el.dataset.node) {
+    const tid = ui.mode === 'move' ? ui.tid : firstTok(p, 'boot')?.id;
+    resetMode(); return send('use', {tid, to: el.dataset.node});
+  }
+  const ex = ui.mode === 'reveal' ? ui.tid : firstTok(p, 'explore')?.id;
+  if (el.dataset.cell) { const [x, y] = el.dataset.cell.split(',').map(Number); resetMode(); return send('use', {tid: ex, mode: 'reveal', x, y}); }
+  if (el.dataset.act) { resetMode(); return send('use', {tid: ex, mode: el.dataset.act}); }
+});
+
+document.addEventListener('click', e => {
+  const d = e.target.closest('[data-tid]');
+  if (d && d.closest('#front,#pocket')) return selectToken(Number(d.dataset.tid));
+  if (d && d.closest('#panel')) {                  // pocket picker
+    const id = Number(d.dataset.tid);
+    if (ui.keep.has(id)) ui.keep.delete(id);
+    else if (ui.keep.size < CONFIG.pocketSize) ui.keep.add(id);
+    else return;
+    return renderModal();
+  }
+  const o = e.target.closest('[data-opt]');
+  if (o) return menuPick(o.dataset.opt);
+  const k = e.target.closest('[data-k]')?.dataset.k;
+  if (k === 'rotl') send('rotate', {dir: -1});
+  if (k === 'rotr') send('rotate', {dir: 1});
+  if (k === 'place') send('place');
+  if (k === 'endcancel') { ui.endOpen = false; renderModal(); }
+  if (k === 'endok') { ui.endOpen = false; send('end', {keep: [...ui.keep]}); renderModal(); }
+  if (k === 'home') location.href = location.pathname;
+});
+
+$('#bDraw').onclick = () => { resetMode(); send('draw'); };
+$('#bEnd').onclick = () => {
+  const p = me(); resetMode();
+  const pool = [...p.front.filter(t => !t.used && TOKEN_INFO[t.t].pocket !== false), ...p.pocket];
+  if (!pool.length) return send('end', {keep: []});
+  ui.keep = new Set(p.pocket.map(t => t.id)); ui.endOpen = true; render();
+};
+$('#recenter').onclick = () => { const p = me(); if (p && p.node) centerOn(...nodePos(p.node)); else centerOn(T / 2, T / 2); };
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || !S || S.phase !== 'play') return;
+  if (e.key === 'Escape') { resetMode(); ui.endOpen = false; render(); }
+  if (!myTurn()) return;
+  if (S.turn.placing) {
+    if (e.key === 'r' || e.key === 'R') send('rotate', {dir: e.shiftKey ? -1 : 1});
+    if (e.key === 'Enter') send('place');
+  } else if (e.key === 'd' && !ui.endOpen) { resetMode(); send('draw'); }
+});
+
+// ---- lobby wiring ------------------------------------------------------
+const params = new URLSearchParams(location.search);
+$('#inName').value = store.get('hm-name') || '';
+if (params.get('room')) $('#inCode').value = params.get('room').toUpperCase().slice(0, CONFIG.roomCodeLength);
+if (params.get('via') === 'torrent') $('#inStrat').value = 'torrent';
+$('#bCreate').onclick = () => connect(makeCode(), true);
+$('#bJoin').onclick = () => {
+  const code = $('#inCode').value.trim().toUpperCase();
+  if (code.length !== CONFIG.roomCodeLength) { $('#lobbyErr').textContent = `Room codes are ${CONFIG.roomCodeLength} letters.`; return; }
+  connect(code, false);
+};
+$('#inCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('#bJoin').click(); });
+$('#bStart').onclick = () => send('start');
+$('#bLeave').onclick = () => { try { net.room?.leave(); } catch {} location.href = location.pathname; };
+$('#bCopy').onclick = async () => {
+  const url = `${location.origin}${location.pathname}?room=${net.code}${net.strat === 'torrent' ? '&via=torrent' : ''}`;
+  try { await navigator.clipboard.writeText(url); $('#bCopy').textContent = 'copied'; } catch { $('#bCopy').textContent = url; }
+};
+window.addEventListener('resize', () => S && S.phase !== 'lobby' && applyView());
+</script>
+</body>
+</html>
