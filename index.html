@@ -153,6 +153,7 @@ h1{font-family:var(--serif);font-weight:400;font-size:52px;letter-spacing:.06em;
 .celltxt{font-family:var(--serif);font-size:30px;fill:#807d75;text-anchor:middle;pointer-events:none}
 .acttxt{font-family:var(--type);font-size:8px;fill:#cfcabd;text-anchor:middle;pointer-events:none;letter-spacing:1px}
 .mee{pointer-events:none}
+.loot{color:var(--path);pointer-events:none}
 .mee .body{stroke:#000;stroke-width:1.2}
 .mee.act .body{stroke:#e9e5da;stroke-width:1.4}
 
@@ -310,6 +311,7 @@ const CONFIG = {
   sneakersSteps: 2,        // sneakers move up to this many spaces
   crowbarSearches: 2,
   crowbarDread: 1,
+  roundDread: 1,           // dread added when every player has had a turn (the house grows restless)
   randomFirstPlayer: true,
 
   // noise = dread added when drawn (Noise, treasure); value = points at the end
@@ -329,7 +331,9 @@ const CONFIG = {
   },
   startBag:  {boot: 3, explore: 2, noise: 2},
   searchBag: {boot: 6, explore: 6, noise: 2, bottle: 2, sneakers: 2, slippers: 2, hiding: 2,
-              crowbar: 2, map: 2, t1: 2, t2: 2, t3: 2},
+              crowbar: 2, map: 2},
+  // one face-up treasure is dealt into each room as its tile is placed (20 rooms with the deck below)
+  treasureSupply: {t1: 10, t2: 7, t3: 3},
   deck:      {crossroad: 4, tee: 4, diag: 4, straight2: 4, room4: 4, button: 2},
 
   playerColors: ['#8e9b7c', '#7c8ba0', '#a3906c', '#8f7f9f', '#6f9a94', '#a07f7c'],
@@ -527,12 +531,34 @@ function startGame() {
     S.tiles[key(DIRS[d][0], DIRS[d][1])] = {t, r: rots[rand(rots.length)]};
   }
   S.deck = shuffle(deck);
+  S.treasurePool = shuffle(Object.entries(CONFIG.treasureSupply).flatMap(([t, n]) => Array(n).fill(t)));
+  S.loot = {};
+  for (const k of Object.keys(S.tiles)) seedLoot(k);
   S.searchBag = makeTokens(CONFIG.searchBag);
   recolor();
   for (const p of S.players) Object.assign(p, {node: START_NODE, bag: makeTokens(CONFIG.startBag), front: [], pocket: [], buttons: 0, escaped: false, eliminated: false});
   S.turn = {n: 0, pid: null};
+  S.firstIdx = CONFIG.randomFirstPlayer ? rand(S.players.length) : 0;
   log('The doors slam shut behind you.');
-  startTurn(S.players[CONFIG.randomFirstPlayer ? rand(S.players.length) : 0]);
+  startTurn(S.players[S.firstIdx]);
+}
+
+function seedLoot(tileKey) {
+  const tile = S.tiles[tileKey];
+  TILE_TYPES[tile.t].nodes.forEach((n, i) => { if (n.kind === 'room' && S.treasurePool.length) S.loot[`${tileKey},${i}`] = S.treasurePool.pop(); });
+}
+
+// End of a round: the house grows restless. If that summons the ghost, it goes for the richest player.
+function roundTick() {
+  if (CONFIG.roundDread <= 0) return;
+  S.dread += CONFIG.roundDread;
+  log(`The house groans. Dread +${CONFIG.roundDread}.`);
+  if (S.dread < CONFIG.dreadMax) return;
+  S.dread = 0;
+  const live = S.players.filter(inPlay);
+  const top = Math.max(...live.map(treasureOf));
+  const rich = live.filter(p => treasureOf(p) === top);
+  jumpscare(rich[rand(rich.length)].id);
 }
 
 function startTurn(p) {
@@ -542,7 +568,11 @@ function startTurn(p) {
 
 function nextTurn() {
   const n = S.players.length, idx = S.players.findIndex(p => p.id === S.turn.pid);
-  for (let k = 1; k <= n; k++) {
+  const rel = (idx - S.firstIdx + n) % n;      // seat position counted from the first player
+  S.turn.bottle = null;
+  let ticked = false;
+  for (let k = 1; k <= n * 2; k++) {
+    if (!ticked && rel + k >= n) { ticked = true; roundTick(); }
     const p = S.players[(idx + k) % n];
     if (eligible(p)) return startTurn(p);
   }
@@ -551,7 +581,7 @@ function nextTurn() {
 
 function finishTurn(p, keepIds) {
   const pc = S.turn.placing;
-  if (pc) { pc.r = [0, 1, 2, 3].find(r => placementConnects({...pc, r})); S.tiles[key(pc.x, pc.y)] = {t: pc.t, r: pc.r}; S.turn.placing = null; }
+  if (pc) { pc.r = [0, 1, 2, 3].find(r => placementConnects({...pc, r})); S.tiles[key(pc.x, pc.y)] = {t: pc.t, r: pc.r}; S.turn.placing = null; seedLoot(key(pc.x, pc.y)); }
   if (!p.escaped) {
     const pool = [...p.front.filter(t => !t.used && TOKEN_INFO[t.t].pocket !== false), ...p.pocket];
     const keep = keepIds ? pool.filter(t => keepIds.includes(t.id)).slice(0, CONFIG.pocketSize) : p.pocket.slice();
@@ -635,6 +665,8 @@ function jumpscare(victim) {
 
 function doSearch(p, times) {
   for (let k = 0; k < times && !S.turn.over; k++) {
+    const loot = S.loot[p.node];
+    if (loot) { delete S.loot[p.node]; p.bag.push({id: ++S.tid, t: loot}); log(`${p.name} takes the ${tokName(loot)} lying in the room.`); continue; }
     if (!S.searchBag.length) { log('The room has been picked clean. Nothing found.'); return; }
     const tok = takeRandom(S.searchBag);
     if (tok.t === 'noise') { S.searchBag.push(tok); log(`${p.name} knocks something over! (Noise)`); addDread(CONFIG.tokens.noise.noise, p.id); }
@@ -717,7 +749,7 @@ function turnAction(p, type, pl) {
   if (type === 'place') {
     if (!pc) return 'not placing';
     if (!placementConnects(pc)) return 'does not connect';
-    S.tiles[key(pc.x, pc.y)] = {t: pc.t, r: pc.r}; S.turn.placing = null;
+    S.tiles[key(pc.x, pc.y)] = {t: pc.t, r: pc.r}; S.turn.placing = null; seedLoot(key(pc.x, pc.y));
     log(`${p.name} reveals: ${TILE_TYPES[pc.t].name}.`);
     return;
   }
@@ -933,7 +965,7 @@ function renderTop() {
   $('#dread').classList.toggle('hot', lvl >= CONFIG.dreadMax - 1);
   const pressed = Object.keys(S.buttons || {}).length;
   $('#info').innerHTML = `<div>room <b>${esc(S.code)}</b> · <span id="netMini">${esc(net.statusText || '')}</span></div>
-    <div>tiles left <b>${S.deck.length}</b> · search bag <b>${S.searchBag.length}</b></div>
+    <div>tiles left <b>${S.deck.length}</b> · search bag <b>${S.searchBag.length}</b> · treasure on map <b>${Object.keys(S.loot || {}).length}</b></div>
     <div>${doorOpen() ? '<span class="open">the front door is OPEN</span>' : `door sealed · buttons <b>${pressed}/${CONFIG.buttonsToOpen}</b>`}</div>`;
 }
 
@@ -989,6 +1021,12 @@ function renderWorld() {
     const L = tileLayers(pc.t, pc.x, pc.y, pc.r), ok = placementConnects(pc);
     html += `<g class="preview ${ok ? '' : 'bad'}" data-rot="1"><rect class="frame" x="${pc.x * T + 1}" y="${pc.y * T + 1}" width="${T - 2}" height="${T - 2}"/>
       <g class="lg2">${L.g}</g><g class="ll">${L.g}</g><g class="lf">${L.g}</g><g>${L.d}</g></g>`;
+  }
+
+  // face-up treasure lying in rooms
+  for (const [node, t] of Object.entries(S.loot || {})) {
+    const [x, y] = nodePos(node);
+    html += `<g class="loot" transform="translate(${x + 4} ${y - 16}) scale(.36)"><circle cx="28.35" cy="28.35" r="30" fill="#050505" stroke="#807d75" stroke-width="2"/>${ICONS[t]}</g>`;
   }
 
   // meeples
@@ -1210,7 +1248,7 @@ function selectToken(tid) {
     const o = exploreOptions(p);
     ui.menu = {title: 'Explore', items: [
       {id: 'reveal', label: 'Reveal a tile', ok: o.reveal.length > 0, sub: o.reveal.length ? `${o.reveal.length} unexplored doorway${o.reveal.length > 1 ? 's' : ''}` : (S.deck.length ? 'no unexplored doorway from here' : 'no tiles left')},
-      {id: 'search', label: 'Search this room', ok: o.search, sub: o.search ? `${S.searchBag.length} things left to find` : 'stand in a room'},
+      {id: 'search', label: 'Search this room', ok: o.search, sub: !o.search ? 'stand in a room' : S.loot[p.node] ? `take the ${tokName(S.loot[p.node])} lying here` : `${S.searchBag.length} things left in the search bag`},
       {id: 'button', label: 'Press the button', ok: o.button, sub: o.button ? `${CONFIG.buttonPoints} points` : 'stand on an unpressed button'},
       {id: 'exit', label: 'Escape through the front door', ok: o.exit, sub: doorOpen() ? 'stand in the entrance hall' : 'the door is sealed'},
     ]};
